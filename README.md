@@ -1,14 +1,15 @@
 # Simple Wallet Keeper
 
-A React + TypeScript app that securely generates and stores EVM-compatible wallets locally.
+A React + TypeScript app that allows users to generate, store and fetch wallets securely.
 
 ## Features
 
-- AES-encrypted wallet storage
-- Balance check via Sepolia testnet (Alchemy)
-- Private key reveal with password prompt
+- Secure AES-encrypted storage of private keys.
+- Per-wallet password prompts and balance checking.
+- Chain switcher with dynamic RPC provider selection.
+- React hooks (useMemo, useCallback) for performance optimizations.
+- Redux Toolkit for global state management.
 - Styled with Tailwind CSS
-- State managed with Redux Toolkit
 
 ## Getting Started
 
