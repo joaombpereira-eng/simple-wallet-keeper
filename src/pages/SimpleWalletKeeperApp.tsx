@@ -1,14 +1,25 @@
+import { useCallback, useEffect, useMemo } from "react";
 import { PasswordPrompt } from "../components/PasswordPrompt";
 import { WalletCard } from "../components/WalletCard";
 import { WalletGenerator } from "../components/WalletGenerator";
-import { usePassordPrompt } from "../hooks/usePasswordPrompt";
+import { usePasswordPrompt } from "../hooks/usePasswordPrompt";
 import { useWalletManager } from "../hooks/useWalletManager";
-import { provider } from "../lib/provider";
-import { HDNodeWallet } from "ethers";
-import { isEmpty } from "lodash";
+import { HDNodeWallet, JsonRpcProvider } from "ethers";
+import { isEmpty, isNil } from "lodash";
 import toast from "react-hot-toast";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { CHAINS } from "../contants/chain";
+import { setChain } from "../store/chainSlice";
 
 export default function SimpleWalletKeeperApp() {
+  const dispatch = useAppDispatch();
+
+  const selectedChain = useAppSelector((state) => state.chain.selectedChain);
+
+  const provider = useMemo(() => {
+    return new JsonRpcProvider(selectedChain.rpcUrl);
+  }, [selectedChain]);
+
   const { wallets, addWallet, decryptWallet, fetchBalance } =
     useWalletManager();
 
@@ -18,7 +29,7 @@ export default function SimpleWalletKeeperApp() {
     onPromptConfirm,
     showPrompt,
     hidePrompt,
-  } = usePassordPrompt();
+  } = usePasswordPrompt();
 
   const handleWalletGenerated = async (wallet: HDNodeWallet) => {
     showPrompt("Enter a password to encrypt the wallet", async (password) => {
@@ -27,15 +38,57 @@ export default function SimpleWalletKeeperApp() {
     });
   };
 
-  const handleDecrypt = async (i: number) => {
-    showPrompt("Enter password to decrypt wallet", async (password) => {
-      await decryptWallet(i, password);
-    });
+  const handleDecrypt = useCallback(
+    (i: number) => {
+      return () => {
+        showPrompt("Enter password to decrypt wallet", async (password) => {
+          await decryptWallet(i, password);
+        });
+      };
+    },
+    [decryptWallet, showPrompt]
+  );
+
+  const handleCheckBalance = useCallback(
+    (i: number) => {
+      return async () => {
+        await fetchBalance(i, provider);
+      };
+    },
+    [fetchBalance, provider]
+  );
+
+  const walletList = useMemo(() => {
+    return (
+      <ul className="space-y-4">
+        {wallets.map((wallet, index) => (
+          <WalletCard
+            wallet={wallet}
+            index={index}
+            handleCheckBalance={handleCheckBalance(index)}
+            handleDecrypt={handleDecrypt(index)}
+            key={index}
+            selectedChain={selectedChain}
+          />
+        ))}
+      </ul>
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wallets, selectedChain]);
+
+  const handleChainSelection = (chainName: string) => {
+    const chain = CHAINS.find((c) => c.name === chainName);
+    if (chain) dispatch(setChain(chain));
   };
 
-  const handleCheckBalance = async (i: number) => {
-    await fetchBalance(i, provider);
-  };
+  useEffect(() => {
+    wallets.forEach((wallet, index) => {
+      if (!isNil(wallet.balance)) {
+        fetchBalance(index, provider);
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedChain]);
 
   return (
     <>
@@ -47,19 +100,22 @@ export default function SimpleWalletKeeperApp() {
 
           <WalletGenerator onWalletGenerated={handleWalletGenerated} />
 
+          <select
+            value={selectedChain.name}
+            className="mt-4 mb-6 border-blue-800 border-2 rounded-lg p-2"
+            onChange={(e) => handleChainSelection(e.target.value)}
+          >
+            {CHAINS.map((chain) => (
+              <option key={chain.id} value={chain.name}>
+                {chain.name}
+              </option>
+            ))}
+          </select>
+
           {!isEmpty(wallets) && (
             <>
               <h2 className="text-xl font-semibold mt-6">Wallets</h2>
-              <ul className="space-y-4">
-                {wallets.map((wallet, index) => (
-                  <WalletCard
-                    wallet={wallet}
-                    index={index}
-                    handleCheckBalance={() => handleCheckBalance(index)}
-                    handleDecrypt={() => handleDecrypt(index)}
-                  />
-                ))}
-              </ul>
+              {walletList}
             </>
           )}
         </div>

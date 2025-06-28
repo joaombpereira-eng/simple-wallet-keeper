@@ -7,7 +7,7 @@ export type StoredWallet = {
   balance?: string; //in ETH (string for easy formatting)
 };
 
-export const usePassordPrompt = () => {
+export const usePasswordPrompt = () => {
   const [promptVisible, setPromptVisible] = useState<boolean>(false);
   const [onPromptConfirm, setOnPromptConfirm] = useState<
     (password: string) => void

@@ -1,12 +1,14 @@
+import { Chain } from "../contants/chain";
 import { LoadingSpinner } from "../assets/LoadingSpinner";
 import { StoredWallet } from "@/hooks/useWalletManager";
-import React, { useState } from "react";
+import React from "react";
 
 type Props = {
   wallet: StoredWallet; // The wallet to display
   index: number; // Index of the wallet in the list
   handleCheckBalance: (index: number) => Promise<void>; // Function to check balance
   handleDecrypt: (index: number) => void; // Function to decrypt wallet
+  selectedChain: Chain;
 };
 
 export const WalletCard = ({
@@ -14,18 +16,8 @@ export const WalletCard = ({
   index,
   handleCheckBalance,
   handleDecrypt,
+  selectedChain,
 }: Props): React.ReactElement => {
-  const [loading, setLoading] = useState<boolean>(false);
-
-  const handleBalanceClick = async () => {
-    setLoading(true);
-    try {
-      await handleCheckBalance(index);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <li key={index} className="border rounded-lg p-4 shadow-sm bg-gray-50">
       <p>
@@ -39,21 +31,19 @@ export const WalletCard = ({
         </p>
       )}
 
-      {wallet.balance ? (
+      {wallet.loading ? (
+        <div className="flex flex-row mr-2 items-center">
+          <LoadingSpinner />
+          <p className="ml-2">Checking balance...</p>
+        </div>
+      ) : wallet.balance ? (
         <p className="text-sm text-blue-600 mt-2">
-          <strong>Balance:</strong> {wallet.balance} ETH
+          Balance shown for <strong>{selectedChain.name}: </strong>
+          {wallet.balance} ETH
         </p>
       ) : (
-        <button
-          onClick={handleBalanceClick}
-          className="flex flex-row text-sm text-blue-700 underline mt-2"
-        >
-          {loading && (
-            <div className="mr-2">
-              <LoadingSpinner />
-            </div>
-          )}
-          {loading ? "Checking..." : "Check Balance"}
+        <button className="flex flex-row text-sm text-blue-700 underline mt-2">
+          {"Check Balance"}
         </button>
       )}
 

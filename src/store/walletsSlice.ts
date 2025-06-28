@@ -31,8 +31,14 @@ const walletsSlice = createSlice({
       state.list[action.payload.index] = action.payload.wallet;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state.list));
     },
+    setLoading(
+      state,
+      action: PayloadAction<{ index: number; loading: boolean }>
+    ) {
+      state.list[action.payload.index].loading = action.payload.loading;
+    },
   },
 });
 
-export const { addWallet, updateWallet } = walletsSlice.actions;
+export const { addWallet, updateWallet, setLoading } = walletsSlice.actions;
 export default walletsSlice.reducer;

@@ -2,6 +2,7 @@ import { ethers, HDNodeWallet, Wallet } from "ethers";
 import toast from "react-hot-toast";
 import {
   addWallet as addWalletAction,
+  setLoading,
   updateWallet,
 } from "../store/walletsSlice";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
@@ -11,6 +12,7 @@ export type StoredWallet = {
   encryptedJson: string;
   privateKey?: string; //Optional - only set after decryption
   balance?: string; //in ETH (string for easy formatting)
+  loading?: boolean;
 };
 
 export const useWalletManager = () => {
@@ -19,7 +21,7 @@ export const useWalletManager = () => {
   const wallets = useAppSelector((state) => state.wallets.list);
 
   const addWallet = async (wallet: HDNodeWallet, password: string) => {
-    const encryptedJson = await wallet.encrypt(password); // Encrypt the private key
+    const encryptedJson = await wallet.encrypt(password);
 
     const storedWallet: StoredWallet = {
       address: wallet.address,
@@ -32,7 +34,6 @@ export const useWalletManager = () => {
   const decryptWallet = async (index: number, password: string) => {
     try {
       const encrypetdJson = wallets[index].encryptedJson;
-      //Decrypts the wallet using password
       const decryptedWallet = await Wallet.fromEncryptedJson(
         encrypetdJson,
         password
@@ -50,6 +51,8 @@ export const useWalletManager = () => {
   };
 
   const fetchBalance = async (index: number, provider: ethers.Provider) => {
+    dispatch(setLoading({ index, loading: true }));
+
     try {
       const rawBalance = await provider.getBalance(wallets[index].address); //Returns balance in wei
       const ethBalance = ethers.formatEther(rawBalance); //Convert wei to ETH
@@ -61,8 +64,9 @@ export const useWalletManager = () => {
         })
       );
     } catch (e) {
-      console.log("Error fetching balance:", e);
       toast.error("Failed to fetch balance.");
+    } finally {
+      dispatch(setLoading({ index, loading: false }));
     }
   };
 
